@@ -1,0 +1,7 @@
+# Create a GKE cluster using crossplane
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-gcp-gke
+spec:
+  package: xpkg.upbound.io/upbound/provider-gcp-gke:v0.40.0
