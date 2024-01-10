@@ -1,40 +1,34 @@
 apiVersion: container.gcp.upbound.io/v1beta1
 kind: Cluster
 metadata:
-  annotations:
-    meta.upbound.io/example-id: container/v1beta1/cluster
   labels:
-    testing.upbound.io/example-name: nodepool
-  name: nodepool
+    cluster_name: gke
+  name: gke-managed-resources
 spec:
   forProvider:
-    enableAutopilot: true
+    enableAutopilot: false
     enableIntranodeVisibility: true
     ipAllocationPolicy:
       - {}
     initialNodeCount: 1
-    location: us-central1-a
+    location: us-central1
     removeDefaultNodePool: true
 ---
 apiVersion: container.gcp.upbound.io/v1beta1
 kind: NodePool
 metadata:
-  annotations:
-    meta.upbound.io/example-id: container/v1beta1/nodepool
   labels:
-    testing.upbound.io/example-name: nodepool
-  name: nodepool
+    cluster_name: gke
+  name: gke-managed-resources-nodepool
 spec:
   forProvider:
     clusterSelector:
       matchLabels:
-        testing.upbound.io/example-name: nodepool
+        cluster_name: gke
     nodeConfig:
       - machineType: e2-small
+        diskSizeGb: 50
         oauthScopes:
           - https://www.googleapis.com/auth/cloud-platform
         preemptible: true
-        serviceAccountSelector:
-          matchLabels:
-            testing.upbound.io/example-name: nodepool
     nodeCount: 1

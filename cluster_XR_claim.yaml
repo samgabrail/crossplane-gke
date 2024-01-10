@@ -1,0 +1,11 @@
+apiVersion: compositions.io/v1alpha1
+kind: XCluster
+metadata:
+  name: example-gke-cluster
+spec:
+  parameters:
+    location: us-east1
+    machineType: e2-small
+    nodeCount: 1
+  compositionRef:
+    name: gke-cluster-nodepool
