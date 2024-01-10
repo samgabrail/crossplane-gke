@@ -3,61 +3,57 @@ Crossplane to createa a GKE cluster
 
 ## Instructions
 
-Install the Up command-line
+### Install the Up command-line
 Download and install the Upbound up command-line.
-
+```bash
 curl -sL "https://cli.upbound.io" | sh
 mv up /usr/local/bin/
-Verify the version of up with up --version
+```
 
+Verify the version of up with up --version
+```bash
 $ up --version
 v0.19.1
-Note: official providers only support up command-line versions v0.13.0 or later.
+```
 
-Install Universal Crossplane
+### Install Universal Crossplane
 Install Upbound Universal Crossplane with the Up command-line.
 
+```bash
 $ up uxp install
 UXP 1.13.2-up.2 installed
-Note: Official provider-families only support crossplane version 1.12.1 or UXP version 1.12.1-up.1 or later.
-
-Verify the UXP pods are running with kubectl get pods -n upbound-system
-
+```
+Verify the UXP pods are running
+```bash
 $ kubectl get pods -n upbound-system
 NAME                                       READY   STATUS    RESTARTS   AGE
 crossplane-77ff754998-k76zz                1/1     Running   0          40s
 crossplane-rbac-manager-79b8bdd6d8-79577   1/1     Running   0          40s
-Install the official GCP provider-family
-Install the official provider-family into the Kubernetes cluster with a Kubernetes configuration file. For instance, let's install the provider-gcp-storage
+```
 
-Note: The first provider installed of a family also installs an extra provider-family Provider. The provider-family provider manages the ProviderConfig for all other providers in the same family.
+### Install the official GCP Container Provider
 
-apiVersion: pkg.crossplane.io/v1
-kind: Provider
-metadata:
-  name: provider-gcp-storage
-spec:
-  package: xpkg.upbound.io/upbound/provider-gcp-storage:<version>
-Apply this configuration with kubectl apply -f.
+```bash
+kubectl apply -f gke_provider.yaml
+```
 
 After installing the provider, verify the install with kubectl get providers.
-
+```bash
 $ kubectl get providers
-NAME                          INSTALLED   HEALTHY   PACKAGE                                                AGE
-provider-gcp-storage          True        True      xpkg.upbound.io/upbound/provider-gcp-storage:v0.36.0   78s
-upbound-provider-family-gcp   True        True      xpkg.upbound.io/upbound/provider-family-gcp:v0.36.0    70s
-It may take up to 5 minutes to report HEALTHY.
+NAME                          INSTALLED   HEALTHY   PACKAGE                                                  AGE
+provider-gcp-container        True        True      xpkg.upbound.io/upbound/provider-gcp-container:v0.41.0   47h
+provider-gcp-storage          True        True      xpkg.upbound.io/upbound/provider-gcp-storage:v0.41.0     47h
+upbound-provider-family-gcp   True        True      xpkg.upbound.io/upbound/provider-family-gcp:v0.41.0      47h
+```
 
-If you are going to use your own registry please check Install Providers in an offline environment.
-
-Create a Kubernetes secret
-The provider-gcp-storage requires credentials to create and manage GCP resources.
+### Create a Kubernetes secret
+The provider-gcp-container requires credentials to create and manage GCP resources.
 
 Generate a GCP JSON key file
 Create a JSON key file containing the GCP account credentials. GCP provides documentation on how to create a key file.
 
 Here is an example key file:
-
+```json
 {
   "type": "service_account",
   "project_id": "caramel-goat-354919",
@@ -70,15 +66,17 @@ Here is an example key file:
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/my-sa-313%40caramel-goat-354919.iam.gserviceaccount.com"
 }
+```
 Save this JSON file as gcp-credentials.json.
 
-Create a Kubernetes secret with GCP credentials
-Use kubectl create secret -n upbound-system to generate the Kubernetes secret object inside the Universal Crossplane cluster.
+Use `kubectl create secret -n upbound-system` to generate the Kubernetes secret object inside the Universal Crossplane cluster.
 
+```bash
 kubectl create secret generic gcp-secret -n upbound-system --from-file=creds=./gcp-credentials.json
+```
 
-View the secret with kubectl describe secret
-
+View the secret with `kubectl describe secret`
+```bash
 $ kubectl describe secret gcp-secret -n upbound-system
 Name:         gcp-secret
 Namespace:    upbound-system
@@ -90,29 +88,18 @@ Type:  Opaque
 Data
 ====
 creds:  2334 bytes
-Create a ProviderConfig
+```
+
+### Create a ProviderConfig
 Create a ProviderConfig Kubernetes configuration file to attach the GCP credentials to the installed official provider-gcp-storage.
 
-Note: the ProviderConfig must contain the correct GCP project ID. The project ID must match the project_id from the JSON key file.
+```bash
+kubectl apply -f gke_provider.yaml
+```
 
-apiVersion: gcp.upbound.io/v1beta1
-kind: ProviderConfig
-metadata:
-  name: default
-spec:
-  projectID: <PROJECT_ID>
-  credentials:
-    source: Secret
-    secretRef:
-      namespace: upbound-system
-      name: gcp-secret
-      key: creds
-Apply this configuration with kubectl apply -f.
+Verify the ProviderConfig
 
-Note: the ProviderConfig value spec.secretRef.name must match the name of the secret in kubectl get secrets -n upbound-system and spec.secretRef.key must match the value in the Data section of the secret.
-
-Verify the ProviderConfig with kubectl describe providerconfigs.
-
+```bash
 $ kubectl describe providerconfigs
 Name:         default
 Namespace:
@@ -126,153 +113,49 @@ Spec:
       Name:       gcp-secret
       Namespace:  upbound-system
     Source:       Secret
-  Project ID:     caramel-goat-354919
-Create a managed resource
-Create a managed resource to verify the provider-gcp-storage is functioning.
+  Project ID:     crossplaneprojects
+```
 
-This example creates a GCP storage bucket, which requires a globally unique name.
-
-Generate a unique bucket name from the command line.
-
-echo "upbound-bucket-"$(head -n 4096 /dev/urandom | openssl sha1 | tail -c 10)
-
-For example
-
-$ echo "upbound-bucket-"$(head -n 4096 /dev/urandom | openssl sha1 | tail -c 10)
-upbound-bucket-21e85e732
-Use this bucket name for metadata.annotations.crossplane.io/external-name value.
-
-Create a Bucket configuration file. Replace <BUCKET NAME> with the upbound-bucket- generated name.
-
-apiVersion: storage.gcp.upbound.io/v1beta1
-kind: Bucket
-metadata:
-  name: example
-  labels:
-  annotations:
-    crossplane.io/external-name: <BUCKET NAME>
-spec:
-  forProvider:
-    location: US
-    storageClass: MULTI_REGIONAL
-  providerConfigRef:
-    name: default
-  deletionPolicy: Delete
-Note: the spec.providerConfigRef.name must match the ProviderConfig metadata.name value.
-
-Apply this configuration with kubectl apply -f.
-
-Use kubectl get managed to verify bucket creation.
-
-$ kubectl get bucket
-NAME      READY   SYNCED   EXTERNAL-NAME              AGE
-example   True    True     upbound-bucket-4a917c947   90s
-
-
-
-
-
-
-
-
-<!-- #################### -->
-### Step 1: Install Crossplane
-
-Let's use helm to install crossplane:
+## Create 2 managed resources
 
 ```bash
-helm repo add \
-crossplane-stable https://charts.crossplane.io/stable && helm repo update
-
-helm install crossplane \
-crossplane-stable/crossplane \
---namespace crossplane-system \
---create-namespace
+kubectl apply -f gke_cluster_managed_resources.yaml
 ```
 
-Check that the pods came up
+Check the status with:
 
 ```bash
-kubectl get pods -n crossplane-system
+kubectl get cluster
+kubectl get nodepool
+kubectl describe cluster
+kubectl describe nodepool
 ```
 
-Look at the new API end-points with kubectl api-resources
+## Create a Composite Resource Definition
 
 ```bash
-kubectl api-resources  | grep crossplane
+kubectl apply -f cluster_XRD.yaml
 ```
 
-### Step 2: Create a Kubernetes secret for AWS 
-
-Rename the `aws-credentials-example.txt` file to `aws-credentials.txt` and add your AWS credentials to the file. Make sure you don't check this file into git.
-
-Now create the secret below
+## Create a Composition
 
 ```bash
-kubectl create secret \
-generic aws-secret \
--n crossplane-system \
---from-file=creds=./aws-credentials.txt
+kubectl apply -f cluster_composition.yaml
 ```
 
-Check that the secret was created:
-```bash
-kubectl describe secret aws-secret
-```
-
-> Note that if your AWS creds change, you can delete this secret and recreate it after updating your `aws-credentials.txt` file. Make sure you don't check this file into git.
-
-### Step 3: Get the AWS provider and provider config ready
-
-Now let's configure the AWS provider and use the credentials we created.
+## Create a Claim
 
 ```bash
-kubectl apply -f provider.yaml
+kubectl apply -f cluster_XR_claim.yaml
 ```
 
-You now have your Kubernetes cluster ready with crossplane installed.
-
-### Step 4: Create the S3 Bucket
-
-
-Apply the configuration:
+## Monitor the provisioning
 
 ```bash
-kubectl apply -f s3bucket.yaml
+kubectl get xcluster
+kubectl describe xcluster
+kubectl get cluster
+kubectl describe cluster
+kubectl get nodepool
+kubectl describe nodepool
 ```
-
-### Step 5: Verify Resource Status
-Check the status of the resource claim to ensure the S3 bucket has been successfully provisioned:
-
-```bash
-kubectl get bucket
-```
-
-Upon successful provisioning, you should see the following output:
-
-```
-NAME                  READY   SYNCED   EXTERNAL-NAME         AGE
-tekanaid-crossplane   True    True     tekanaid-crossplane   11m
-```
-
-### Step 6: Verify Drift Correction
-
-Now delete the bucket from the AWS console and wait some time for crossplane to recreate the bucket.
-
-Run the command below to see the status of the bucket:
-
-```bash
-kubectl describe bucket
-```
-
-### Step 7: Cleanup
-
-Now when ready to delete the bucket run the command below:
-
-```bash
-kubectl delete -f s3bucket.yaml
-```
-
-### Conclusion
-
-In this demo, we walked through the process of creating an AWS S3 bucket using Crossplane. This showcases how Crossplane facilitates cloud resource provisioning through a declarative API, abstracting the complexities of individual cloud providers and providing a unified, Kubernetes-native interface for cloud infrastructure management.
