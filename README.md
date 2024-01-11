@@ -131,6 +131,35 @@ kubectl describe cluster
 kubectl describe nodepool
 ```
 
+### Access the New Cluster
+
+Get the cluster name:
+
+```bash
+CLUSTER_NAME=$(kubectl get clusters.container.gcp.upbound.io gke-managed-resources -o=jsonpath='{.metadata.name}')
+```
+
+Get the cluster location:
+
+```bash
+CLUSTER_LOCATION=$(kubectl get clusters.container.gcp.upbound.io gke-managed-resources -o=jsonpath='{.spec.forProvider.location}')
+```
+
+Get the project ID:
+
+```bash
+PROJECT_ID=$(kubectl get providerconfig.gcp.upbound.io/default -o=jsonpath='{.spec.projectID}')
+```
+
+After running these commands, you will have environment variables CLUSTER_NAME, CLUSTER_LOCATION, and PROJECT_ID set with the respective values. Then, you can use them in your gcloud command like this:
+
+```bash
+gcloud container clusters get-credentials $CLUSTER_NAME --zone $CLUSTER_LOCATION --project $PROJECT_ID
+```
+
+> Note: You may run into this error: CRITICAL: ACTION REQUIRED: gke-gcloud-auth-plugin, which is needed for continued use of kubectl, was not found or is not executable. Install gke-gcloud-auth-plugin for use with kubectl by following https://cloud.google.com/blog/products/containers-kubernetes/kubectl-auth-changes-in-gke
+If that happens, follow the link above to install the gke auth plugin.
+
 ## Create a Composite Resource Definition
 
 ```bash

@@ -13,6 +13,9 @@ spec:
     initialNodeCount: 1
     location: us-central1
     removeDefaultNodePool: true
+  writeConnectionSecretToRef:
+    name: gke-managed-resources-kubeconfig
+    namespace: upbound-system
 ---
 apiVersion: container.gcp.upbound.io/v1beta1
 kind: NodePool

@@ -23,6 +23,9 @@ spec:
             initialNodeCount: 1
             location: us-central1
             removeDefaultNodePool: true
+          writeConnectionSecretToRef:
+            name: gke-managed-resources-kubeconfig
+            namespace: upbound-system
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.location"
