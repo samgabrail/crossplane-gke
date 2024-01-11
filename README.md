@@ -1,5 +1,5 @@
 # Overview
-Crossplane to createa a GKE cluster
+Crossplane to create a GKE cluster
 
 ## Instructions
 
