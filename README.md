@@ -94,7 +94,7 @@ creds:  2334 bytes
 Create a ProviderConfig Kubernetes configuration file to attach the GCP credentials to the installed official provider-gcp-storage.
 
 ```bash
-kubectl apply -f gke_provider.yaml
+kubectl apply -f provider_config.yaml
 ```
 
 Verify the ProviderConfig
