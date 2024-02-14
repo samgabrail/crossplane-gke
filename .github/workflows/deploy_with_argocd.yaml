@@ -37,7 +37,10 @@ jobs:
     - name: Login to Argo CD
       run: argocd login ${{ secrets.ARGOCD_SERVER }} --username ${{ secrets.ARGOCD_USER }} --password ${{ secrets.ARGOCD_PASS }} --grpc-web
 
-    - name: Login to Argo CD
+    - name: Register Repository in Argo CD
+      run: argocd repo add ${{ github.event.inputs.repoURLforArgo }} --username samgabrail --password ${{ secrets.GITHUB_PERSONAL_TOKEN }}
+
+    - name: Check Directory
       run: |
         pwd
         ls -lah
