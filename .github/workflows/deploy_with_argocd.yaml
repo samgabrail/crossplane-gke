@@ -36,7 +36,7 @@ jobs:
 
     - name: Generate Cluster XR Claim
       run: |
-        cat <<EOF > XR_claim.yaml
+        cat <<EOF > ./Deployments/XR_claim.yaml
         apiVersion: compositions.io/v1alpha1
         kind: XCluster
         metadata:
@@ -56,29 +56,15 @@ jobs:
       run: |
         if [ "${{ github.event.inputs.action }}" == "create" ]; then
           argocd app create ${{ github.event.inputs.clusterName }} \
-            --repo https://github.com/samgabrail/crossplane-gke.git \
-            --path . \
+            --repo https://github.com/samgabrail/crossplane-gke \
+            --path ./Deployments \
             --dest-server https://kubernetes.default.svc \
             --dest-namespace ${{ github.event.inputs.clusterName }} \
             --project default \
             --sync-policy automated \
             --upsert \
-            --directory-recurse \
             --file XR_claim.yaml
+            --grpc-web
         elif [ "${{ github.event.inputs.action }}" == "destroy" ]; then
-          argocd app delete ${{ github.event.inputs.clusterName }} --cascade
+          argocd app delete ${{ github.event.inputs.clusterName }} --cascade --grpc-web -y
         fi
-
-
-
-
-        argocd app create myapp \
-            --repo https://github.com/samgabrail/crossplane-gke.git \
-            --path . \
-            --dest-server https://kubernetes.default.svc \
-            --dest-namespace samgke \
-            --project default \
-            --sync-policy automated \
-            --upsert \
-            --directory-recurse \
-            --file XR_claim.yaml
