@@ -1,0 +1,69 @@
+name: Manage GKE Cluster
+
+on:
+  workflow_dispatch:
+    inputs:
+      clusterName:
+        description: 'Cluster Name'
+        required: true
+      region:
+        description: 'Region'
+        required: true
+      machineType:
+        description: 'Machine Type'
+        required: true
+      nodeCount:
+        description: 'Node Count'
+        required: true
+      action:
+        description: 'Action (create/destroy)'
+        required: true
+
+jobs:
+  deploy-or-destroy-cluster:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Install Argo CD CLI
+      run: |
+        sudo curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+        sudo chmod +x /usr/local/bin/argocd
+
+    - name: Login to Argo CD
+      run: argocd login ${{ secrets.ARGOCD_SERVER }} --username ${{ secrets.ARGOCD_USER }} --password ${{ secrets.ARGOCD_PASS }}
+
+    - name: Generate Cluster XR Claim
+      run: |
+        cat <<EOF > cluster_XR_claim.yaml
+        apiVersion: compositions.io/v1alpha1
+        kind: XCluster
+        metadata:
+          name: ${{ github.event.inputs.clusterName }}
+        spec:
+          parameters:
+            clusterName: ${{ github.event.inputs.clusterName }}
+            region: ${{ github.event.inputs.region }}
+            machineType: ${{ github.event.inputs.machineType }}
+            nodeCount: ${{ github.event.inputs.nodeCount }}
+          compositionRef:
+            name: gke-cluster-nodepool
+        EOF
+
+    - name: Deploy or Destroy Cluster with Argo CD
+      run: |
+        if [ "${{ github.event.inputs.action }}" == "create" ]; then
+          argocd app create ${{ github.event.inputs.clusterName }} \
+            --repo https://github.com/samgabrail/crossplane-gke.git \
+            --path . \
+            --dest-server https://kubernetes.default.svc \
+            --dest-namespace ${{ github.event.inputs.clusterName }} \
+            --project default \
+            --sync-policy automated \
+            --upsert \
+            --directory-recurse \
+            --file cluster_XR_claim.yaml
+        elif [ "${{ github.event.inputs.action }}" == "destroy" ]; then
+          argocd app delete ${{ github.event.inputs.clusterName }} --cascade
+        fi

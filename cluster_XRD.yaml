@@ -24,7 +24,9 @@ spec:
               parameters:
                 type: object
                 properties:
-                  location:
+                  clusterName:
+                    type: string
+                  region:
                     type: string
                   machineType:
                     type: string

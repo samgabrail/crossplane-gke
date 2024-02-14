@@ -94,7 +94,7 @@ creds:  2334 bytes
 Create a ProviderConfig Kubernetes configuration file to attach the GCP credentials to the installed official provider-gcp-storage.
 
 ```bash
-kubectl apply -f gke_provider.yaml
+kubectl apply -f provider_config.yaml
 ```
 
 Verify the ProviderConfig
@@ -139,10 +139,10 @@ Get the cluster name:
 CLUSTER_NAME=$(kubectl get clusters.container.gcp.upbound.io gke-managed-resources -o=jsonpath='{.metadata.name}')
 ```
 
-Get the cluster location:
+Get the cluster region:
 
 ```bash
-CLUSTER_LOCATION=$(kubectl get clusters.container.gcp.upbound.io gke-managed-resources -o=jsonpath='{.spec.forProvider.location}')
+CLUSTER_REGION=$(kubectl get clusters.container.gcp.upbound.io gke-managed-resources -o=jsonpath='{.spec.forProvider.region}')
 ```
 
 Get the project ID:
@@ -151,10 +151,10 @@ Get the project ID:
 PROJECT_ID=$(kubectl get providerconfig.gcp.upbound.io/default -o=jsonpath='{.spec.projectID}')
 ```
 
-After running these commands, you will have environment variables CLUSTER_NAME, CLUSTER_LOCATION, and PROJECT_ID set with the respective values. Then, you can use them in your gcloud command like this:
+After running these commands, you will have environment variables CLUSTER_NAME, CLUSTER_REGION, and PROJECT_ID set with the respective values. Then, you can use them in your gcloud command like this:
 
 ```bash
-gcloud container clusters get-credentials $CLUSTER_NAME --zone $CLUSTER_LOCATION --project $PROJECT_ID
+gcloud container clusters get-credentials $CLUSTER_NAME --zone $CLUSTER_REGION --project $PROJECT_ID
 ```
 
 > Note: You may run into this error: CRITICAL: ACTION REQUIRED: gke-gcloud-auth-plugin, which is needed for continued use of kubectl, was not found or is not executable. Install gke-gcloud-auth-plugin for use with kubectl by following https://cloud.google.com/blog/products/containers-kubernetes/kubectl-auth-changes-in-gke
