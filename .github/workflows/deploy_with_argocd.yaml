@@ -72,7 +72,6 @@ jobs:
             --project default \
             --sync-policy automated \
             --upsert \
-            --file XR_claim.yaml
             --grpc-web
         elif [ "${{ github.event.inputs.action }}" == "destroy" ]; then
           argocd app delete ${{ github.event.inputs.clusterName }} --cascade --grpc-web -y
