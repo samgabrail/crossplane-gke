@@ -68,3 +68,17 @@ jobs:
         elif [ "${{ github.event.inputs.action }}" == "destroy" ]; then
           argocd app delete ${{ github.event.inputs.clusterName }} --cascade
         fi
+
+
+
+
+        argocd app create myapp \
+            --repo https://github.com/samgabrail/crossplane-gke.git \
+            --path . \
+            --dest-server https://kubernetes.default.svc \
+            --dest-namespace samgke \
+            --project default \
+            --sync-policy automated \
+            --upsert \
+            --directory-recurse \
+            --file XR_claim.yaml

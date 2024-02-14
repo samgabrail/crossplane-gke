@@ -21,7 +21,7 @@ spec:
             ipAllocationPolicy:
               - {}
             initialNodeCount: 1
-            region: us-central1
+            location: us-central1
             removeDefaultNodePool: true
           writeConnectionSecretToRef:
             name: gke-managed-resources-kubeconfig
@@ -29,7 +29,7 @@ spec:
       patches:
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.region"
-          toFieldPath: "spec.forProvider.region"
+          toFieldPath: "spec.forProvider.location"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.clusterName"
           toFieldPath: "metadata.labels.cluster_name"
@@ -51,9 +51,6 @@ spec:
                 preemptible: true
             nodeCount: 1
       patches:
-        - type: FromCompositeFieldPath
-          fromFieldPath: "spec.parameters.region"
-          toFieldPath: "spec.forProvider.region"
         - type: FromCompositeFieldPath
           fromFieldPath: "spec.parameters.machineType"
           toFieldPath: "spec.forProvider.nodeConfig[0].machineType"
