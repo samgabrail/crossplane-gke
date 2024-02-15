@@ -20,14 +20,12 @@ jobs:
   deploy-api:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v2
-
     - name: Clean and Checkout Dockerfile Repository
       if: ${{ github.event.inputs.action == 'create' }}
       run: |
         CLEANED_URL=$(echo "${{ github.event.inputs.repoURLforArgo }}" | sed -e 's|https://github.com/||' -e 's|\.git$||')
         echo "CLEANED_URL=${CLEANED_URL}" >> $GITHUB_ENV
+        echo "Cleaning and checking out ${{ env.CLEANED_URL }}"
       id: clean_repo
 
     - name: Checkout Dockerfile Repository
@@ -41,13 +39,17 @@ jobs:
     - name: Build and Push Docker Image to GHCR
       if: ${{ github.event.inputs.action == 'create' }}
       run: |
+        pwd
+        ls -lah
         echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
         docker build -t ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }} .
         docker tag ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }} ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:latest
         docker push ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }}
         docker push ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:latest
 
-    
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
     - name: Install Argo CD CLI
       run: |
         sudo curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
