@@ -73,7 +73,7 @@ jobs:
         if [ "${{ github.event.inputs.action }}" == "create" ]; then
           argocd app create ${{ github.event.inputs.apiName }} \
             --repo ${{ github.event.inputs.repoURLforArgo }} \
-            --path . \
+            --path ./Deployments \
             --dest-server https://kubernetes.default.svc \
             --dest-namespace ${{ github.event.inputs.apiName }} \
             --project default \
