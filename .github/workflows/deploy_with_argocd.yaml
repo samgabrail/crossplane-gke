@@ -46,24 +46,6 @@ jobs:
         ls -lah
         whoami
 
-    # - name: Generate Cluster XR Claim
-    #   run: |
-    #     cat <<EOF > XR_claim.yaml
-    #     apiVersion: compositions.io/v1alpha1
-    #     kind: XCluster
-    #     metadata:
-    #       name: ${{ github.event.inputs.clusterName }}
-    #     spec:
-    #       parameters:
-    #         clusterName: ${{ github.event.inputs.clusterName }}
-    #         region: ${{ github.event.inputs.region }}
-    #         machineType: ${{ github.event.inputs.machineType }}
-    #         nodeCount: ${{ github.event.inputs.nodeCount }}
-    #       compositionRef:
-    #         name: gke-cluster-nodepool
-    #     EOF
-    #     cat XR_claim.yaml
-
     - name: Deploy or Destroy Cluster with Argo CD
       run: |
         if [ "${{ github.event.inputs.action }}" == "create" ]; then
