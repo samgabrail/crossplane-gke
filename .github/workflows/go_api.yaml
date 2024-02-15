@@ -25,7 +25,8 @@ jobs:
       run: |
         CLEANED_URL=$(echo "${{ github.event.inputs.repoURLforArgo }}" | sed -e 's|https://github.com/||' -e 's|\.git$||')
         echo "CLEANED_URL=${CLEANED_URL}" >> $GITHUB_ENV
-        echo "Cleaning and checking out ${{ env.CLEANED_URL }}"
+        echo "Cleaning and checking env ${{ env.CLEANED_URL }}"
+        echo "Cleaning and checking var ${CLEANED_URL}"
       id: clean_repo
 
     - name: Checkout Dockerfile Repository
@@ -33,7 +34,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         repository: ${{ env.CLEANED_URL }}
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.MYGITHUB_TOKEN }}
         fetch-depth: 1
 
     - name: Build and Push Docker Image to GHCR
@@ -41,7 +42,7 @@ jobs:
       run: |
         pwd
         ls -lah
-        echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        echo ${{ secrets.MYGITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
         docker build -t ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }} .
         docker tag ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }} ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:latest
         docker push ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }}
@@ -89,5 +90,5 @@ jobs:
           echo "${{ github.event.inputs.repoURLforArgo }}"
           REPO_NAME=$(echo "${{ github.event.inputs.repoURLforArgo }}" | sed 's/.*\/\([^ ]*\/[^.]*\).*/\1/')
           echo "$REPO_NAME"
-          curl -X DELETE -H "Authorization: token ${{ secrets.MYGITHUB_TOKEN }}" \
+          curl -X DELETE -H "Authorization: token ${{ secrets.MYMYGITHUB_TOKEN }}" \
           https://api.github.com/repos/${REPO_NAME}
