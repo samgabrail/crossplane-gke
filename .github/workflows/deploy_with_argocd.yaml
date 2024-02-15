@@ -56,6 +56,7 @@ jobs:
             --dest-namespace ${{ github.event.inputs.clusterName }} \
             --project default \
             --sync-policy automated \
+            --sync-option CreateNamespace=true \
             --upsert \
             --grpc-web
         elif [ "${{ github.event.inputs.action }}" == "destroy" ]; then
