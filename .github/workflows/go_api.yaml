@@ -20,15 +20,19 @@ jobs:
   deploy-api:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Code
+    - name: Checkout Dockerfile Repository
+      if: ${{ github.event.inputs.action == 'create' }}
       uses: actions/checkout@v2
+      with:
+        repository: ${{ github.event.inputs.repoURLforArgo }}
+        token: ${{ secrets.GITHUB_TOKEN }} # Assuming the repo is within the same GitHub account/organization
 
     - name: Build and Push Docker Image to GHCR
       if: ${{ github.event.inputs.action == 'create' }}
       run: |
         echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
         docker build -t ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }} .
-        docker build tag ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }} ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:latest
+        docker tag ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }} ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:latest
         docker push ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }}
         docker push ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:latest
     
