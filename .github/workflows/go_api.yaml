@@ -19,26 +19,22 @@ on:
 jobs:
   deploy-api:
     runs-on: ubuntu-latest
-    outputs:
-      cleanRepoURL: ${{ steps.clean_repo.outputs.cleaned_repo_url }}
     steps:
     - name: Checkout Code
       uses: actions/checkout@v2
 
-    - name: Clean repo URL
-      id: clean_repo
+    - name: Clean and Checkout Dockerfile Repository
+      if: ${{ github.event.inputs.action == 'create' }}
       run: |
-        CLEANED_URL="${{ github.event.inputs.repoURLforArgo }}"
-        CLEANED_URL="${CLEANED_URL/https:\/\/}"
-        CLEANED_URL="${CLEANED_URL/.git/}"
+        CLEANED_URL=$(echo "${{ github.event.inputs.repoURLforArgo }}" | sed -e 's|https://github.com/||' -e 's|\.git$||')
         echo "CLEANED_URL=${CLEANED_URL}" >> $GITHUB_ENV
-        echo "::set-output name=cleaned_repo_url::${CLEANED_URL}"
+      id: clean_repo
 
     - name: Checkout Dockerfile Repository
       if: ${{ github.event.inputs.action == 'create' }}
       uses: actions/checkout@v2
       with:
-        repository: ${{ steps.clean_repo.outputs.cleaned_repo_url }}
+        repository: ${{ env.CLEANED_URL }}
         token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 1
 
@@ -50,6 +46,7 @@ jobs:
         docker tag ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }} ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:latest
         docker push ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }}
         docker push ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:latest
+
     
     - name: Install Argo CD CLI
       run: |
