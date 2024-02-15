@@ -62,3 +62,6 @@ jobs:
         elif [ "${{ github.event.inputs.action }}" == "destroy" ]; then
           argocd app delete ${{ github.event.inputs.clusterName }} --cascade --grpc-web -y
         fi
+
+        # Need to register the created GKE cluster in Argo CD maybe use a webhook from GCP to another GitHub actions workflow?
+        # argocd cluster add gke-cluster --name gke-cluster --kubeconfig $KUBECONFIG --in-cluster --grpc-
