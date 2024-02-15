@@ -1,0 +1,75 @@
+name: Deploy a Go API
+
+on:
+  workflow_dispatch:
+    inputs:
+      apiName:
+        description: 'API Name'
+        required: true
+      imageName:
+        description: 'Container Image Name'
+        required: true
+      repoURLforArgo: 
+        description: 'The URL of the repository for Argo CD to deploy GKE'
+        required: true
+      action:
+        description: 'Action (create/destroy)'
+        required: true
+
+jobs:
+  deploy-api:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Build and Push Docker Image to GHCR
+      if: ${{ github.event.inputs.action == 'create' }}
+      run: |
+        echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        docker build -t ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }} .
+        docker build tag ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }} ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:latest
+        docker push ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:${{ github.run_id }}
+        docker push ghcr.io/${{ github.repository_owner }}/${{ github.event.inputs.imageName }}:latest
+    
+    - name: Install Argo CD CLI
+      run: |
+        sudo curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+        sudo chmod +x /usr/local/bin/argocd
+
+    - name: Login to Argo CD
+      run: argocd login ${{ secrets.ARGOCD_SERVER }} --username ${{ secrets.ARGOCD_USER }} --password ${{ secrets.ARGOCD_PASS }} --grpc-web
+
+    - name: Register Repository in Argo CD
+      run: argocd repo add ${{ github.event.inputs.repoURLforArgo }} --username samgabrail --password ${{ secrets.MYGITHUB_TOKEN }}
+
+    - name: Check Directory
+      run: |
+        pwd
+        ls -lah
+        whoami
+
+    - name: Deploy or Destroy API
+      run: |
+        if [ "${{ github.event.inputs.action }}" == "create" ]; then
+          argocd app create ${{ github.event.inputs.apiName }} \
+            --repo ${{ github.event.inputs.repoURLforArgo }} \
+            --path . \
+            --dest-server https://kubernetes.default.svc \
+            --dest-namespace ${{ github.event.inputs.apiName }} \
+            --project default \
+            --sync-policy automated \
+            --upsert \
+            --grpc-web
+        elif [ "${{ github.event.inputs.action }}" == "destroy" ]; then
+          argocd app delete ${{ github.event.inputs.apiName }} --cascade --grpc-web -y
+        fi
+
+    - name: Delete GitHub Repository
+      if: ${{ github.event.inputs.action == 'destroy' }}
+      run: |
+          echo "${{ github.event.inputs.repoURLforArgo }}"
+          REPO_NAME=$(echo "${{ github.event.inputs.repoURLforArgo }}" | sed 's/.*\/\([^ ]*\/[^.]*\).*/\1/')
+          echo "$REPO_NAME"
+          curl -X DELETE -H "Authorization: token ${{ secrets.MYGITHUB_TOKEN }}" \
+          https://api.github.com/repos/${REPO_NAME}
