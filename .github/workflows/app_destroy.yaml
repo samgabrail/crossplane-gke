@@ -48,6 +48,7 @@ jobs:
         echo "Constructed URL: https://github.com/$owner/$repo.git"
         echo "URL=https://github.com/$owner/$repo.git" >> $GITHUB_ENV
         echo "REPO=$repo" >> $GITHUB_ENV
+        echo "OWNER=$owner" >> $GITHUB_ENV
 
     - name: Unregister Repository from Argo CD
       run: argocd repo rm $URL --grpc-web
@@ -56,4 +57,4 @@ jobs:
       run: |
         echo "Deleting GitHub Repository $REPO"
         curl -X DELETE -H "Authorization: token ${{ secrets.MYGITHUB_TOKEN }}" \
-        https://api.github.com/repos/$REPO
+        https://api.github.com/repos/$OWNER/$REPO
