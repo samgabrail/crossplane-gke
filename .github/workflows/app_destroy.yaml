@@ -11,7 +11,7 @@ on:
         required: true
 
 jobs:
-  deploy-api:
+  destroy-api:
     runs-on: ubuntu-latest
     steps:
 
@@ -41,7 +41,7 @@ jobs:
         echo "::set-output name=repo::$repo"
         
     - name: Unregister Repository from Argo CD
-      run: argocd repo rm ${{ steps.repo-url.outputs.url }} --grpc-web
+      run: argocd repo rm ${{ steps.repo-url.outputs.url }} --grpc-web || true
 
     - name: Delete GitHub Repository
       run: |
