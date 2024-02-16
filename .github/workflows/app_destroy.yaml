@@ -26,9 +26,29 @@ jobs:
     - name: Login to Argo CD
       run: argocd login ${{ secrets.ARGOCD_SERVER }} --username ${{ secrets.ARGOCD_USER }} --password ${{ secrets.ARGOCD_PASS }} --grpc-web
 
+    # - name: Destroy API
+    #   run: |
+    #       argocd app delete ${{ github.event.inputs.apiName }} --cascade --grpc-web -y
+
     - name: Destroy API
+      id: delete_argocd_app
       run: |
-          argocd app delete ${{ github.event.inputs.apiName }} --cascade --grpc-web -y
+        set +e  # Disable stopping the script on the first error
+        argocd app delete withargo --cascade --grpc-web -y 2>&1 | tee delete_output.txt
+        DELETE_APP_EXIT_CODE=${PIPESTATUS[0]}  # Capture the exit code of the argocd command
+        if [ $DELETE_APP_EXIT_CODE -ne 0 ]; then
+          if grep -q "permission denied" delete_output.txt; then
+            echo "::error ::Permission denied when trying to delete the Argo CD application."
+            exit $DELETE_APP_EXIT_CODE
+          elif grep -q "not found" delete_output.txt; then
+            echo "Application not found, considered as already deleted."
+          else
+            echo "::error ::Unexpected error when trying to delete the Argo CD application."
+            cat delete_output.txt
+            exit $DELETE_APP_EXIT_CODE
+          fi
+        fi
+        set -e  # Re-enable stopping the script on errors
 
     - name: Extract and Construct Repo URL
       id: repo-url
@@ -41,7 +61,7 @@ jobs:
         echo "::set-output name=repo::$repo"
         
     - name: Unregister Repository from Argo CD
-      run: argocd repo rm ${{ steps.repo-url.outputs.url }} --grpc-web || true
+      run: argocd repo rm ${{ steps.repo-url.outputs.url }} --grpc-web -y
 
     - name: Delete GitHub Repository
       run: |
