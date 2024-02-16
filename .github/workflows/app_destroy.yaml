@@ -30,13 +30,21 @@ jobs:
       run: |
           argocd app delete ${{ github.event.inputs.apiName }} --cascade --grpc-web -y
 
+    - name: Extract and Construct Repo URL
+      id: repo-url
+      run: |
+        query=${{ github.event.inputs.repoURLforArgo }}
+        owner=$(echo $query | sed -n 's/.*owner=\([^&]*\).*/\1/p')
+        repo=$(echo $query | sed -n 's/.*repo=\([^&]*\).*/\1/p')
+        echo "Constructed URL: https://github.com/$owner/$repo.git"
+        echo "::set-output name=url::https://github.com/$owner/$repo.git"
+        echo "::set-output name=repo::$repo"
+        
     - name: Unregister Repository from Argo CD
-      run: argocd repo rm ${{ github.event.inputs.repoURLforArgo }} --grpc-web
+      run: argocd repo rm ${{ steps.repo-url.outputs.url }} --grpc-web
 
     - name: Delete GitHub Repository
       run: |
-          echo "${{ github.event.inputs.repoURLforArgo }}"
-          REPO_NAME=$(echo "${{ github.event.inputs.repoURLforArgo }}" | sed 's/.*\/\([^ ]*\/[^.]*\).*/\1/')
-          echo "$REPO_NAME"
-          curl -X DELETE -H "Authorization: token ${{ secrets.MYMYGITHUB_TOKEN }}" \
-          https://api.github.com/repos/${REPO_NAME}
+        echo "Deleting GitHub Repository ${{ steps.repo-url.outputs.repo }}"
+        curl -X DELETE -H "Authorization: token ${{ secrets.MYGITHUB_TOKEN }}" \
+        https://api.github.com/repos/${{ steps.repo-url.outputs.repo }}
