@@ -30,41 +30,21 @@ jobs:
       run: |
           argocd app delete ${{ github.event.inputs.apiName }} --cascade --grpc-web -y || true
 
-    # - name: Destroy API
-    #   id: delete_argocd_app
-    #   run: |
-    #     set +e  # Disable stopping the script on the first error
-    #     argocd app delete withargo --cascade --grpc-web -y 2>&1 | tee delete_output.txt
-    #     DELETE_APP_EXIT_CODE=${PIPESTATUS[0]}  # Capture the exit code of the argocd command
-    #     if [ $DELETE_APP_EXIT_CODE -ne 0 ]; then
-    #       if grep -q "permission denied" delete_output.txt; then
-    #         echo "::error ::Permission denied when trying to delete the Argo CD application."
-    #         exit $DELETE_APP_EXIT_CODE
-    #       elif grep -q "not found" delete_output.txt; then
-    #         echo "Application not found, considered as already deleted."
-    #       else
-    #         echo "::error ::Unexpected error when trying to delete the Argo CD application."
-    #         cat delete_output.txt
-    #         exit $DELETE_APP_EXIT_CODE
-    #       fi
-    #     fi
-    #     set -e  # Re-enable stopping the script on errors
-
     - name: Extract and Construct Repo URL
       id: repo-url
       run: |
         query=${{ github.event.inputs.repoURLforArgo }}
-        owner=$(echo $query | sed -n 's/.*owner=\([^&]*\).*/\1/p')
-        repo=$(echo $query | sed -n 's/.*repo=\([^&]*\).*/\1/p')
+        owner=$(echo "$query" | sed -n 's/.*owner=\([^&]*\).*/\1/p')
+        repo=$(echo "$query" | sed -n 's/.*repo=\([^&]*\).*/\1/p')
         echo "Constructed URL: https://github.com/$owner/$repo.git"
-        echo "::set-output name=url::https://github.com/$owner/$repo.git"
-        echo "::set-output name=repo::$repo"
-        
+        echo "URL=https://github.com/$owner/$repo.git" >> $GITHUB_ENV
+        echo "REPO=$repo" >> $GITHUB_ENV
+
     - name: Unregister Repository from Argo CD
-      run: argocd repo rm ${{ steps.repo-url.outputs.url }} --grpc-web
+      run: argocd repo rm $URL --grpc-web
 
     - name: Delete GitHub Repository
       run: |
-        echo "Deleting GitHub Repository ${{ steps.repo-url.outputs.repo }}"
+        echo "Deleting GitHub Repository $REPO"
         curl -X DELETE -H "Authorization: token ${{ secrets.MYGITHUB_TOKEN }}" \
-        https://api.github.com/repos/${{ steps.repo-url.outputs.repo }}
+        https://api.github.com/repos/$REPO
