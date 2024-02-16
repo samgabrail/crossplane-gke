@@ -61,7 +61,7 @@ jobs:
         echo "::set-output name=repo::$repo"
         
     - name: Unregister Repository from Argo CD
-      run: argocd repo rm ${{ steps.repo-url.outputs.url }} --grpc-web -y
+      run: argocd repo rm ${{ steps.repo-url.outputs.url }} --grpc-web
 
     - name: Delete GitHub Repository
       run: |
