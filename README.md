@@ -188,6 +188,3 @@ kubectl describe cluster
 kubectl get nodepool
 kubectl describe nodepool
 ```
-
-## Add the cluster to ArgoCD
-
