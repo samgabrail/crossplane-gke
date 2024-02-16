@@ -30,16 +30,6 @@ jobs:
       run: |
           argocd app delete ${{ github.event.inputs.apiName }} --cascade --grpc-web -y || true
 
-    # - name: Extract and Construct Repo URL
-    #   id: repo-url
-    #   run: |
-    #     query=${{ github.event.inputs.repoURLforArgo }}
-    #     owner=$(echo "$query" | sed -n 's/.*owner=\([^&]*\).*/\1/p')
-    #     repo=$(echo "$query" | sed -n 's/.*repo=\([^&]*\).*/\1/p')
-    #     echo "Constructed URL: https://github.com/$owner/$repo.git"
-    #     echo "URL=https://github.com/$owner/$repo.git" >> $GITHUB_ENV
-    #     echo "REPO=$repo" >> $GITHUB_ENV
-
     - name: Extract and Construct Repo URL
       id: repo-url
       run: |
@@ -51,7 +41,7 @@ jobs:
         echo "OWNER=$owner" >> $GITHUB_ENV
 
     - name: Unregister Repository from Argo CD
-      run: argocd repo rm $URL --grpc-web
+      run: argocd repo rm $URL --grpc-web || true
 
     - name: Delete GitHub Repository
       run: |
