@@ -18,12 +18,9 @@ on:
       repoURLforArgo: 
         description: 'The URL of the repository for Argo CD to deploy GKE'
         required: true
-      action:
-        description: 'Action (create/destroy)'
-        required: true
 
 jobs:
-  deploy-or-destroy-cluster:
+  deploy-cluster:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
@@ -46,9 +43,8 @@ jobs:
         ls -lah
         whoami
 
-    - name: Deploy or Destroy Cluster with Argo CD
+    - name: Deploy Cluster with Argo CD
       run: |
-        if [ "${{ github.event.inputs.action }}" == "create" ]; then
           argocd app create ${{ github.event.inputs.clusterName }} \
             --repo ${{ github.event.inputs.repoURLforArgo }} \
             --path . \
@@ -59,9 +55,3 @@ jobs:
             --sync-option CreateNamespace=true \
             --upsert \
             --grpc-web
-        elif [ "${{ github.event.inputs.action }}" == "destroy" ]; then
-          argocd app delete ${{ github.event.inputs.clusterName }} --cascade --grpc-web -y
-        fi
-
-        # Need to register the created GKE cluster in Argo CD maybe use a webhook from GCP to another GitHub actions workflow?
-        # argocd cluster add gke-cluster --name gke-cluster --kubeconfig $KUBECONFIG --in-cluster --grpc-

@@ -12,16 +12,12 @@ on:
       repoURLforArgo: 
         description: 'The URL of the repository for Argo CD to deploy GKE'
         required: true
-      action:
-        description: 'Action (create/destroy)'
-        required: true
 
 jobs:
   deploy-api:
     runs-on: ubuntu-latest
     steps:
     - name: Clean and Checkout Dockerfile Repository
-      if: ${{ github.event.inputs.action == 'create' }}
       run: |
         CLEANED_URL=$(echo "${{ github.event.inputs.repoURLforArgo }}" | sed -e 's|https://github.com/||' -e 's|\.git$||')
         echo "CLEANED_URL=${CLEANED_URL}" >> $GITHUB_ENV
@@ -30,7 +26,6 @@ jobs:
       id: clean_repo
 
     - name: Checkout Dockerfile Repository
-      if: ${{ github.event.inputs.action == 'create' }}
       uses: actions/checkout@v2
       with:
         repository: ${{ env.CLEANED_URL }}
@@ -38,7 +33,6 @@ jobs:
         fetch-depth: 1
 
     - name: Build and Push Docker Image to Docker Hub
-      if: ${{ github.event.inputs.action == 'create' }}
       run: |
         echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
         docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ github.event.inputs.imageName }}:${{ github.run_id }} .
@@ -66,28 +60,15 @@ jobs:
         ls -lah
         whoami
 
-    - name: Deploy or Destroy API
+    - name: Deploy API
       run: |
-        if [ "${{ github.event.inputs.action }}" == "create" ]; then
-          argocd app create ${{ github.event.inputs.apiName }} \
-            --repo ${{ github.event.inputs.repoURLforArgo }} \
-            --path ./Deployments \
-            --dest-server https://kubernetes.default.svc \
-            --dest-namespace ${{ github.event.inputs.apiName }} \
-            --project default \
-            --sync-policy automated \
-            --sync-option CreateNamespace=true \
-            --upsert \
-            --grpc-web
-        elif [ "${{ github.event.inputs.action }}" == "destroy" ]; then
-          argocd app delete ${{ github.event.inputs.apiName }} --cascade --grpc-web -y
-        fi
-
-    - name: Delete GitHub Repository
-      if: ${{ github.event.inputs.action == 'destroy' }}
-      run: |
-          echo "${{ github.event.inputs.repoURLforArgo }}"
-          REPO_NAME=$(echo "${{ github.event.inputs.repoURLforArgo }}" | sed 's/.*\/\([^ ]*\/[^.]*\).*/\1/')
-          echo "$REPO_NAME"
-          curl -X DELETE -H "Authorization: token ${{ secrets.MYMYGITHUB_TOKEN }}" \
-          https://api.github.com/repos/${REPO_NAME}
+        argocd app create ${{ github.event.inputs.apiName }} \
+          --repo ${{ github.event.inputs.repoURLforArgo }} \
+          --path ./Deployments \
+          --dest-server https://kubernetes.default.svc \
+          --dest-namespace ${{ github.event.inputs.apiName }} \
+          --project default \
+          --sync-policy automated \
+          --sync-option CreateNamespace=true \
+          --upsert \
+          --grpc-web
